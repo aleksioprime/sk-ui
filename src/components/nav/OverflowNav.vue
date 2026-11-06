@@ -76,7 +76,9 @@ function onResize() {
 
 function onDocumentClick(event) {
   if (open.value && !event.target.closest('[data-overflow-more]')) open.value = false
-  if (burgerOpen.value && !event.target.closest('[data-overflow-burger]')) burgerOpen.value = false
+  // Не event.target.closest: значок в кнопке сменяется при открытии, к этому моменту он уже вне документа,
+  // и клик по нему выглядел бы кликом мимо меню. Путь события зафиксирован при нажатии.
+  if (burgerOpen.value && !event.composedPath().includes(burger.value)) burgerOpen.value = false
 }
 
 function onKey(event) {

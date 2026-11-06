@@ -216,6 +216,21 @@ describe('OverflowNav', () => {
     vi.unstubAllGlobals()
   })
 
+  it('бургер открывается кликом по значку, который при открытии сменяется', async () => {
+    const wrapper = await mountNav(300)
+    const button = wrapper.find('[data-overflow-burger] button')
+    document.body.append(wrapper.element)
+    // В браузере значок перерисовывается до обработчика на документе: нажатый элемент уже вне документа
+    const icon = document.createElement('span')
+    button.element.append(icon)
+    button.element.addEventListener('click', () => icon.remove())
+    icon.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
+    expect(button.attributes('aria-expanded')).toBe('true')
+    wrapper.element.remove()
+    wrapper.unmount()
+  })
+
   it('скрытый ряд измерения не расширяет страницу', async () => {
     const wrapper = await mountNav(1000)
     const row = wrapper.get('div[aria-hidden="true"]')
