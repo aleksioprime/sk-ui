@@ -1,7 +1,8 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { BrandMark, SchoolFooter, UiButton, UiConfirm, UiInput, UiSelect, createBrand, skUi } from '../src/index.js'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import { BrandMark, OverflowNav, SchoolFooter, UiButton, UiConfirm, UiInput, UiSelect, createBrand, skUi } from '../src/index.js'
 
 describe('UiButton', () => {
   it('показывает индикатор загрузки', () => {
@@ -176,5 +177,71 @@ describe('бренд', () => {
     const wrapper = mount(SchoolFooter)
     const links = wrapper.findAll('a').map((a) => a.attributes('href'))
     expect(links).toEqual(['https://skolhub.ru/', 'https://gymnasium.sk.ru/'])
+  })
+})
+
+describe('OverflowNav', () => {
+  const ITEM_WIDTH = 100
+  const LINKS = ['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый'].map((label) => ({ label, to: { name: 'home' } }))
+  let navWidth
+  let resize
+
+  const mountNav = async (width) => {
+    navWidth = width
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback) {
+          resize = callback
+        }
+        observe() {}
+        disconnect() {}
+      },
+    )
+    // В jsdom нет раскладки: ширины задаём сами, как их дал бы браузер
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(() => ITEM_WIDTH)
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => navWidth)
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', name: 'home', component: { template: '<div />' } }],
+    })
+    const wrapper = mount(OverflowNav, { props: { links: LINKS }, global: { plugins: [router] } })
+    await nextTick()
+    await nextTick()
+    return wrapper
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('скрытый ряд измерения не расширяет страницу', async () => {
+    const wrapper = await mountNav(1000)
+    const row = wrapper.get('[aria-hidden="true"]')
+    expect(row.classes()).toEqual(expect.arrayContaining(['invisible', 'absolute', 'w-0', 'overflow-hidden']))
+    expect(row.findAll('span').map((item) => item.text())).toEqual(LINKS.map((link) => link.label))
+    // Без whitespace-nowrap пункты сжались бы в ряду нулевой ширины и измерялись бы неверно
+    for (const item of row.findAll('span')) expect(item.classes()).toContain('whitespace-nowrap')
+  })
+
+  it('показывает все пункты, когда они помещаются', async () => {
+    const wrapper = await mountNav(1000)
+    expect(wrapper.findAll('a')).toHaveLength(LINKS.length)
+    expect(wrapper.find('[data-overflow-more]').exists()).toBe(false)
+  })
+
+  it('уносит непоместившиеся пункты в «Ещё» и возвращает при расширении', async () => {
+    const wrapper = await mountNav(350)
+    expect(wrapper.findAll('a').map((a) => a.text())).toEqual(['Первый', 'Второй'])
+
+    await wrapper.get('[data-overflow-more] button').trigger('click')
+    expect(wrapper.findAll('[role="menuitem"]').map((a) => a.text())).toEqual(['Третий', 'Четвёртый', 'Пятый'])
+
+    navWidth = 1000
+    resize()
+    await nextTick()
+    expect(wrapper.find('[data-overflow-more]').exists()).toBe(false)
+    expect(wrapper.findAll('a')).toHaveLength(LINKS.length)
   })
 })

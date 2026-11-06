@@ -98,8 +98,9 @@ const linkClass = 'whitespace-nowrap rounded-control px-3 py-1.5 text-ink-muted 
       </div>
     </div>
 
-    <!-- Скрытый ряд для измерения ширины пунктов -->
-    <div ref="measure" class="pointer-events-none invisible absolute left-0 top-0 flex gap-1" aria-hidden="true">
+    <!-- Скрытый ряд для измерения ширины пунктов. Нулевая ширина с обрезкой не даёт ему расширять страницу,
+         а пункты не сжимаются из-за whitespace-nowrap, поэтому их ширина остаётся настоящей. -->
+    <div ref="measure" class="pointer-events-none invisible absolute left-0 top-0 flex w-0 gap-1 overflow-hidden" aria-hidden="true">
       <span v-for="link in links" :key="link.label" :class="linkClass">{{ link.label }}</span>
     </div>
   </nav>
