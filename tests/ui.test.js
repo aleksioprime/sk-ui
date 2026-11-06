@@ -1,7 +1,8 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { BrandMark, SchoolFooter, UiButton, UiConfirm, UiInput, UiSelect, createBrand, skUi } from '../src/index.js'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import { BrandMark, OverflowNav, SchoolFooter, UiButton, UiConfirm, UiInput, UiSelect, createBrand, skUi } from '../src/index.js'
 
 describe('UiButton', () => {
   it('показывает индикатор загрузки', () => {
@@ -176,5 +177,135 @@ describe('бренд', () => {
     const wrapper = mount(SchoolFooter)
     const links = wrapper.findAll('a').map((a) => a.attributes('href'))
     expect(links).toEqual(['https://skolhub.ru/', 'https://gymnasium.sk.ru/'])
+  })
+})
+
+describe('OverflowNav', () => {
+  const ITEM_WIDTH = 100
+  const LINKS = ['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый'].map((label) => ({ label, to: { name: 'home' } }))
+  let navWidth
+  let resize
+
+  const mountNav = async (width) => {
+    navWidth = width
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback) {
+          resize = callback
+        }
+        observe() {}
+        disconnect() {}
+      },
+    )
+    // В jsdom нет раскладки: ширины задаём сами, как их дал бы браузер
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(() => ITEM_WIDTH)
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => navWidth)
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', name: 'home', component: { template: '<div />' } }],
+    })
+    const wrapper = mount(OverflowNav, { props: { links: LINKS }, global: { plugins: [router] } })
+    await nextTick()
+    await nextTick()
+    return wrapper
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('бургер открывается кликом по значку, который при открытии сменяется', async () => {
+    const wrapper = await mountNav(300)
+    const button = wrapper.find('[data-overflow-burger] button')
+    document.body.append(wrapper.element)
+    // В браузере значок перерисовывается до обработчика на документе: нажатый элемент уже вне документа
+    const icon = document.createElement('span')
+    button.element.append(icon)
+    button.element.addEventListener('click', () => icon.remove())
+    icon.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
+    expect(button.attributes('aria-expanded')).toBe('true')
+    wrapper.element.remove()
+    wrapper.unmount()
+  })
+
+  it('скрытый ряд измерения не расширяет страницу', async () => {
+    const wrapper = await mountNav(1000)
+    const row = wrapper.get('div[aria-hidden="true"]')
+    expect(row.classes()).toEqual(expect.arrayContaining(['invisible', 'absolute', 'w-0', 'overflow-hidden']))
+    expect(row.findAll('span').map((item) => item.text())).toEqual(LINKS.map((link) => link.label))
+    // Без whitespace-nowrap пункты сжались бы в ряду нулевой ширины и измерялись бы неверно
+    for (const item of row.findAll('span')) expect(item.classes()).toContain('whitespace-nowrap')
+  })
+
+  it('показывает все пункты, когда они помещаются', async () => {
+    const wrapper = await mountNav(1000)
+    expect(wrapper.findAll('a')).toHaveLength(LINKS.length)
+    expect(wrapper.find('[data-overflow-more]').exists()).toBe(false)
+  })
+
+  it('уносит непоместившиеся пункты в «Ещё» и возвращает при расширении', async () => {
+    const wrapper = await mountNav(350)
+    expect(wrapper.findAll('a').map((a) => a.text())).toEqual(['Первый', 'Второй'])
+
+    await wrapper.get('[data-overflow-more] button').trigger('click')
+    expect(wrapper.findAll('[role="menuitem"]').map((a) => a.text())).toEqual(['Третий', 'Четвёртый', 'Пятый'])
+
+    navWidth = 1000
+    resize()
+    await nextTick()
+    expect(wrapper.find('[data-overflow-more]').exists()).toBe(false)
+    expect(wrapper.findAll('a')).toHaveLength(LINKS.length)
+  })
+
+  it('на узком экране прячет ряд пунктов и показывает бургер', async () => {
+    const wrapper = await mountNav(350)
+    expect(wrapper.get('[data-overflow-burger]').classes()).toContain('sm:hidden')
+    expect(wrapper.get('[data-overflow-more]').classes()).toEqual(expect.arrayContaining(['hidden', 'sm:block']))
+    for (const link of wrapper.findAll('a')) expect(link.classes()).toEqual(expect.arrayContaining(['hidden', 'sm:block']))
+  })
+
+  it('бургер раскрывает все пункты на ширину экрана', async () => {
+    const wrapper = await mountNav(350)
+    const button = wrapper.get('[data-overflow-burger] button')
+    expect(button.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.findAll('[data-overflow-burger] a')).toHaveLength(0)
+
+    await button.trigger('click')
+    expect(button.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.findAll('[data-overflow-burger] a').map((a) => a.text())).toEqual(LINKS.map((link) => link.label))
+    const panel = wrapper.get('[data-overflow-burger] div')
+    expect(panel.attributes('style')).toContain('width: 334px')
+    expect(panel.attributes('style')).toContain('left: 8px')
+  })
+
+  it('бургер закрывается по выбору пункта, Escape и клику мимо', async () => {
+    const wrapper = await mountNav(350)
+    const button = wrapper.get('[data-overflow-burger] button')
+    const isOpen = () => button.attributes('aria-expanded') === 'true'
+
+    await button.trigger('click')
+    await wrapper.get('[data-overflow-burger] a').trigger('click')
+    expect(isOpen()).toBe(false)
+
+    await button.trigger('click')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await nextTick()
+    expect(isOpen()).toBe(false)
+
+    await button.trigger('click')
+    document.body.click()
+    await nextTick()
+    expect(isOpen()).toBe(false)
+  })
+
+  it('«Ещё» в правой половине экрана раскрывается влево', async () => {
+    const wrapper = await mountNav(350)
+    const more = wrapper.get('[data-overflow-more] button')
+    vi.spyOn(more.element, 'getBoundingClientRect').mockReturnValue({ left: 300 })
+    await more.trigger('click')
+    expect(wrapper.get('[role="menu"]').classes()).toContain('right-0')
   })
 })
