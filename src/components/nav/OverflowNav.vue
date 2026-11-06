@@ -2,7 +2,9 @@
 /**
  * Меню без прокрутки: пункты, которые не помещаются по ширине, уходят в выпадающее «Ещё».
  * Ширины пунктов измеряются в скрытом ряду, раскладка пересчитывается при изменении размера.
- * На узких экранах (меньше брейкпоинта sm) вместо ряда пунктов показывается бургер со всеми пунктами.
+ * На узких экранах (меньше брейкпоинта sm) вместо ряда пунктов показывается бургер у правого края со всеми пунктами.
+ * Слот burger-footer - блок под пунктами в панели бургера, например имя пользователя и выход.
+ * Шапка сервиса прячет свой блок пользователя на этих экранах (hidden sm:flex), чтобы он не дублировался.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -14,6 +16,7 @@ const nav = ref(null)
 const measure = ref(null)
 const moreButton = ref(null)
 const burger = ref(null)
+const burgerButton = ref(null)
 const visibleCount = ref(props.links.length)
 const open = ref(false)
 const moreAlignRight = ref(false)
@@ -84,7 +87,10 @@ function onDocumentClick(event) {
 function onKey(event) {
   if (event.key !== 'Escape') return
   open.value = false
+  if (!burgerOpen.value) return
   burgerOpen.value = false
+  // Пункт с фокусом исчез вместе с панелью: без этого фокус ушёл бы на body
+  burgerButton.value?.focus()
 }
 
 let observer
@@ -111,8 +117,9 @@ const linkClass = 'whitespace-nowrap rounded-control px-3 py-1.5 text-ink-muted 
 
 <template>
   <nav ref="nav" class="relative flex min-w-0 flex-1 items-center gap-1 text-sm" aria-label="Основное меню">
-    <div ref="burger" class="relative sm:hidden" data-overflow-burger>
+    <div ref="burger" class="relative ml-auto sm:hidden" data-overflow-burger>
       <button
+        ref="burgerButton"
         type="button"
         class="flex size-9 items-center justify-center rounded-control text-ink-muted hover:bg-brand-50 hover:text-ink"
         :aria-label="burgerOpen ? 'Закрыть меню' : 'Открыть меню'"
@@ -139,6 +146,9 @@ const linkClass = 'whitespace-nowrap rounded-control px-3 py-1.5 text-ink-muted 
         >
           {{ link.label }}
         </RouterLink>
+        <div v-if="$slots['burger-footer']" class="mt-1 grid gap-0.5 border-t border-line pt-1" @click="burgerOpen = false">
+          <slot name="burger-footer" />
+        </div>
       </div>
     </div>
 

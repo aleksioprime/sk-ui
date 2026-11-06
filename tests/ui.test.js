@@ -186,7 +186,7 @@ describe('OverflowNav', () => {
   let navWidth
   let resize
 
-  const mountNav = async (width) => {
+  const mountNav = async (width, options = {}) => {
     navWidth = width
     vi.stubGlobal(
       'ResizeObserver',
@@ -205,7 +205,7 @@ describe('OverflowNav', () => {
       history: createMemoryHistory(),
       routes: [{ path: '/', name: 'home', component: { template: '<div />' } }],
     })
-    const wrapper = mount(OverflowNav, { props: { links: LINKS }, global: { plugins: [router] } })
+    const wrapper = mount(OverflowNav, { props: { links: LINKS }, global: { plugins: [router] }, ...options })
     await nextTick()
     await nextTick()
     return wrapper
@@ -299,6 +299,40 @@ describe('OverflowNav', () => {
     document.body.click()
     await nextTick()
     expect(isOpen()).toBe(false)
+  })
+
+  it('бургер стоит у правого края', async () => {
+    const wrapper = await mountNav(350)
+    expect(wrapper.get('[data-overflow-burger]').classes()).toContain('ml-auto')
+  })
+
+  it('показывает блок пользователя под пунктами и закрывается по нажатию в нём', async () => {
+    const wrapper = await mountNav(350, { slots: { 'burger-footer': '<button class="logout">Выйти</button>' } })
+    const button = wrapper.get('[data-overflow-burger] button')
+    expect(wrapper.find('.logout').exists()).toBe(false)
+
+    await button.trigger('click')
+    const panel = wrapper.get('[data-overflow-burger] > div')
+    expect(panel.element.lastElementChild.querySelector('.logout')).not.toBeNull()
+    await wrapper.get('.logout').trigger('click')
+    expect(button.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('без слота панель не показывает разделитель', async () => {
+    const wrapper = await mountNav(350)
+    await wrapper.get('[data-overflow-burger] button').trigger('click')
+    expect(wrapper.find('[data-overflow-burger] .border-t').exists()).toBe(false)
+  })
+
+  it('Escape возвращает фокус на кнопку бургера', async () => {
+    const wrapper = await mountNav(350, { attachTo: document.body })
+    const button = wrapper.get('[data-overflow-burger] button')
+    await button.trigger('click')
+    wrapper.get('[data-overflow-burger] a').element.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await nextTick()
+    expect(document.activeElement).toBe(button.element)
+    wrapper.unmount()
   })
 
   it('«Ещё» в правой половине экрана раскрывается влево', async () => {
