@@ -23,7 +23,7 @@ const inputAttrs = computed(() => Object.fromEntries(Object.entries(attrs).filte
       v-bind="inputAttrs"
       :aria-invalid="!!error || undefined"
       :aria-describedby="error || hint ? `${id}-help` : undefined"
-      class="h-10 rounded-control border bg-surface px-3 outline-none transition-colors focus:border-brand-500"
+      class="h-10 min-w-0 rounded-control border bg-surface px-3 outline-none transition-colors focus:border-brand-500"
       :class="error ? 'border-red-500' : 'border-line'"
     />
     <p v-if="error || hint" :id="`${id}-help`" class="text-sm" :class="error ? 'text-red-600' : 'text-ink-muted'">
