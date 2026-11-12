@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { BrandMark, OverflowNav, SchoolFooter, UiButton, UiConfirm, UiDialog, UiInput, UiSelect, createBrand, skUi } from '../src/index.js'
+import { BrandMark, OverflowNav, SchoolFooter, UiButton, UiConfirm, UiDialog, UiInput, UiSelect, UiSwitch, createBrand, skUi } from '../src/index.js'
 
 describe('UiButton', () => {
   it('показывает индикатор загрузки', () => {
@@ -16,6 +16,28 @@ describe('UiButton', () => {
     const wrapper = mount(UiButton, { props: { type: 'submit' } })
     expect(wrapper.attributes('type')).toBe('submit')
     expect(wrapper.attributes('disabled')).toBeUndefined()
+  })
+})
+
+describe('UiSwitch', () => {
+  it('передаёт новое состояние и связывает подпись с переключателем', async () => {
+    const wrapper = mount(UiSwitch, { props: { label: 'Опрос доступен', hint: 'Вступает в силу сразу', modelValue: true } })
+    expect(wrapper.attributes('role')).toBe('switch')
+    expect(wrapper.attributes('aria-checked')).toBe('true')
+    expect(wrapper.get('[id="' + wrapper.attributes('aria-labelledby') + '"]').text()).toBe('Опрос доступен')
+    expect(wrapper.get('[id="' + wrapper.attributes('aria-describedby') + '"]').text()).toBe('Вступает в силу сразу')
+    await wrapper.trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
+    await wrapper.setProps({ modelValue: false })
+    expect(wrapper.attributes('aria-checked')).toBe('false')
+  })
+
+  it('игнорирует повторное действие во время запроса', async () => {
+    const wrapper = mount(UiSwitch, { props: { label: 'Опрос доступен', loading: true } })
+    expect(wrapper.attributes('aria-busy')).toBe('true')
+    expect(wrapper.attributes('aria-disabled')).toBe('true')
+    await wrapper.trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 })
 

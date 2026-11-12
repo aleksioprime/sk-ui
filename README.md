@@ -2,7 +2,7 @@
 
 Общие компоненты интерфейса школьных сервисов гимназии (Конкурсы, Опросы, Диагностика) на Vue 3 и Tailwind 4:
 
-- элементы формы и раскладки: `UiButton`, `UiInput`, `UiSelect` (свой выпадающий список с поиском и выбором
+- элементы формы и раскладки: `UiButton`, `UiInput`, `UiSwitch`, `UiSelect` (свой выпадающий список с поиском и выбором
   нескольких), `UiDialog` (модальная форма), `UiConfirm` (модальное подтверждение), `UiCard`, `UiBadge`, `UiCopyField`;
 - заглушки загрузки: `UiSkeleton`, `SkeletonTable`, `SkeletonList`, `SkeletonPage`;
 - бренд гимназии: `BrandMark` (логотип и название сервиса в шапке и на странице входа), `SchoolFooter`
@@ -20,7 +20,7 @@
 `package.json` сервиса - архив тега с GitHub (git в образе не нужен):
 
 ```json
-"sk-ui": "https://github.com/aleksioprime/sk-ui/archive/refs/tags/v0.1.4.tar.gz"
+"sk-ui": "https://github.com/aleksioprime/sk-ui/archive/refs/tags/v0.1.5.tar.gz"
 ```
 
 Пакет отдаёт исходники `.vue`, поэтому Vite не должен их предсобирать, а vitest должен
@@ -85,6 +85,40 @@ createApp(App).use(skUi, { serviceName: SERVICE_NAME }).mount('#app')
 import { SkeletonTable, UiBadge, UiButton, UiCard, UiInput } from 'sk-ui'
 </script>
 ```
+
+### Переключатели
+
+`UiSwitch` принимает булево значение через `v-model`, постоянную подпись через
+`label` и необязательное пояснение через `hint`. Для действия с запросом
+используйте `:model-value`, `@update:model-value` и `:loading`.
+При ошибке вызывающий компонент может оставить прежнее значение и показать сообщение.
+
+### Ссылки и раскрывающиеся блоки
+
+`UiCopyField` по умолчанию показывает адрес в поле. Режим `variant="link"`
+показывает короткую ссылку с подписью `label` и отдельной кнопкой копирования.
+
+```vue
+<UiDisclosure>
+  <UiDisclosureButton>Предпросмотр</UiDisclosureButton>
+  <UiDisclosurePanel>Содержимое предпросмотра</UiDisclosurePanel>
+</UiDisclosure>
+```
+
+При необходимости управляйте блоком через `v-model:open`. Кнопку и содержимое
+можно разместить в разных частях одного `UiDisclosure`, как в таблице.
+Панель раскрывается и сворачивается плавно и учитывает настройку уменьшения движения.
+
+### Формы и таблицы
+
+Применяйте класс `ui-changed` к изменённым полям или группам полей.
+`UiFormActions` располагается внутри формы и передаёт событие `cancel`.
+Показывайте панель, когда форма отличается от сохранённого состояния.
+
+`UiTable` получает `columns` и `rows`. Для сортировки используйте
+`v-model:sort` и сортируйте строки в вызывающем компоненте. Слот
+`cell-{key}` настраивает ячейку, слот `details` раскрывает подробности
+под строкой. Укажите `primary` для колонки с кнопкой раскрытия.
 
 ### Модальные формы
 
