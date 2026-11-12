@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { BrandMark, OverflowNav, SchoolFooter, UiButton, UiConfirm, UiInput, UiSelect, createBrand, skUi } from '../src/index.js'
+import { BrandMark, OverflowNav, SchoolFooter, UiButton, UiConfirm, UiDialog, UiInput, UiSelect, createBrand, skUi } from '../src/index.js'
 
 describe('UiButton', () => {
   it('показывает индикатор загрузки', () => {
@@ -111,6 +111,31 @@ describe('UiSelect', () => {
     await nextTick()
     expect(document.body.querySelector('input[type="search"]')).toBeNull()
     wrapper.unmount()
+  })
+})
+
+describe('UiDialog', () => {
+  it('связывает заголовок с окном и блокирует отмену во время сохранения', async () => {
+    const wrapper = mount(UiDialog, { props: { title: 'Новая запись' }, attachTo: document.body })
+    try {
+      const dialog = document.body.querySelector('dialog[data-ui-dialog]')
+      dialog.showModal = vi.fn(() => { dialog.open = true })
+      dialog.close = vi.fn(() => { dialog.open = false })
+
+      await wrapper.setProps({ open: true, busy: true })
+      expect(dialog.showModal).toHaveBeenCalledOnce()
+      expect(document.getElementById(dialog.getAttribute('aria-labelledby')).textContent).toBe('Новая запись')
+      dialog.dispatchEvent(new Event('cancel', { cancelable: true }))
+      expect(wrapper.emitted('update:open')).toBeUndefined()
+
+      await wrapper.setProps({ busy: false })
+      dialog.dispatchEvent(new Event('cancel', { cancelable: true }))
+      expect(wrapper.emitted('update:open')).toEqual([[false]])
+      await wrapper.setProps({ open: false })
+      expect(dialog.close).toHaveBeenCalledOnce()
+    } finally {
+      wrapper.unmount()
+    }
   })
 })
 
