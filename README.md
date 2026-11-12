@@ -20,7 +20,7 @@
 `package.json` сервиса - архив тега с GitHub (git в образе не нужен):
 
 ```json
-"sk-ui": "https://github.com/aleksioprime/sk-ui/archive/refs/tags/v0.1.5.tar.gz"
+"sk-ui": "https://github.com/aleksioprime/sk-ui/archive/refs/tags/v0.1.6.tar.gz"
 ```
 
 Пакет отдаёт исходники `.vue`, поэтому Vite не должен их предсобирать, а vitest должен
@@ -92,6 +92,12 @@ import { SkeletonTable, UiBadge, UiButton, UiCard, UiInput } from 'sk-ui'
 `label` и необязательное пояснение через `hint`. Для действия с запросом
 используйте `:model-value`, `@update:model-value` и `:loading`.
 При ошибке вызывающий компонент может оставить прежнее значение и показать сообщение.
+
+### Опасные действия
+
+Для кнопки удаления на странице используйте `UiButton variant="danger-outline"`.
+Красная рамка и светлый фон выделяют действие среди остальных кнопок.
+Для окончательного подтверждения в диалоге используйте `variant="danger"`.
 
 ### Ссылки и раскрывающиеся блоки
 

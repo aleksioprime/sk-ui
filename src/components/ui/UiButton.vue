@@ -4,11 +4,12 @@ const variants = {
   secondary: 'bg-surface text-ink border border-line hover:bg-brand-50',
   ghost: 'text-ink hover:bg-brand-50',
   danger: 'bg-red-600 text-white hover:bg-red-700',
+  'danger-outline': 'border border-red-300 bg-red-50 text-red-800 enabled:hover:border-red-400 enabled:hover:bg-red-100',
 }
 const sizes = { sm: 'h-8 px-3 text-sm', md: 'h-10 px-4' }
 
 const props = defineProps({
-  variant: { type: String, default: 'secondary', validator: (value) => ['primary', 'secondary', 'ghost', 'danger'].includes(value) },
+  variant: { type: String, default: 'secondary', validator: (value) => ['primary', 'secondary', 'ghost', 'danger', 'danger-outline'].includes(value) },
   size: { type: String, default: 'md', validator: (value) => ['sm', 'md'].includes(value) },
   type: { type: String, default: 'button' },
   disabled: { type: Boolean, default: false },
