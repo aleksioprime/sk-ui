@@ -4,6 +4,7 @@ export { default as UiCard } from './components/ui/UiCard.vue'
 export { default as UiBadge } from './components/ui/UiBadge.vue'
 export { default as UiCopyField } from './components/ui/UiCopyField.vue'
 export { default as UiSelect } from './components/ui/UiSelect.vue'
+export { default as UiDialog } from './components/ui/UiDialog.vue'
 export { default as UiConfirm } from './components/ui/UiConfirm.vue'
 
 export { default as UiSkeleton } from './components/skeleton/UiSkeleton.vue'
