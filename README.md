@@ -20,7 +20,7 @@
 `package.json` сервиса - архив тега с GitHub (git в образе не нужен):
 
 ```json
-"sk-ui": "https://github.com/aleksioprime/sk-ui/archive/refs/tags/v0.1.8.tar.gz"
+"sk-ui": "https://github.com/aleksioprime/sk-ui/archive/refs/tags/v0.1.9.tar.gz"
 ```
 
 Пакет отдаёт исходники `.vue`, поэтому Vite не должен их предсобирать, а vitest должен
@@ -122,7 +122,9 @@ import { SkeletonTable, UiBadge, UiButton, UiCard, UiInput } from 'sk-ui'
 
 ### Формы и таблицы
 
-Применяйте класс `ui-changed` к изменённым полям или группам полей.
+Применяйте класс `ui-changed` к изменённому полю, его обёртке или строке.
+Для блока из нескольких полей добавьте постоянный класс `ui-change-group`,
+чтобы внутренние отступы сохранялись до и после правки.
 `UiFormActions` располагается внутри формы и передаёт событие `cancel`.
 Показывайте панель, когда форма отличается от сохранённого состояния.
 
